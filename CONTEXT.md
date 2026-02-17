@@ -8,15 +8,16 @@
 
 ## Stack Definido
 
-| Componente       | Tecnología                                       | Estado             |
-| ---------------- | ------------------------------------------------ | ------------------ |
-| Backend API      | Python + FastAPI                                 | ✅ HECHO y probado |
-| Base de datos    | Supabase + pgvector (Free Tier)                  | ✅ Configurado     |
-| Embeddings       | Local `all-MiniLM-L6-v2` (384 dims, offline, $0) | ✅ Funcionando     |
-| §Codec           | Python, diccionario 60+ términos                 | ✅ Implementado    |
-| MCP Server       | TypeScript (MCP SDK)                             | ⏳ Siguiente       |
-| Chrome Extension | JS vanilla + Manifest V3                         | ⏳ Pendiente       |
-| Android Keyboard | Kotlin IME                                       | ⏳ Pendiente       |
+| Componente | Tecnología | Estado |
+| Componente | Tecnología | Estado |
+| ---------------- | ------------------------------------------------ | -------------------------- |
+| Backend API | Python + FastAPI | ✅ HECHO y probado |
+| Base de datos | Supabase + pgvector (Free Tier) | ✅ Configurado |
+| Embeddings | Local `all-MiniLM-L6-v2` (384 dims, offline, $0) | ✅ Funcionando |
+| §Codec | Python, diccionario 60+ términos | ✅ Implementado |
+| MCP Server | TypeScript (MCP SDK) | ✅ HECHO y compilado |
+| Chrome Extension | JS vanilla + Manifest V3 | ✅ HECHO (Load Unpacked) |
+| Android Keyboard | Kotlin IME | ✅ Scaffolding listo (Abrir en Android Studio) |
 
 ## Archivos del Backend
 

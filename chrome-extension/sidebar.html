@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 15px;
+        background: #111;
+        color: #eee;
+        font-family: "Segoe UI", sans-serif;
+        font-size: 14px;
+        overflow-x: hidden;
+      }
+      h2 {
+        margin: 0 0 15px 0;
+        color: #00ff9d;
+        font-family: "Courier New", monospace;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 5px;
+      }
+
+      .section {
+        margin-bottom: 20px;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        background: #222;
+        border: 1px solid #444;
+        color: #fff;
+        padding: 8px;
+        border-radius: 4px;
+        box-sizing: border-box;
+        margin-bottom: 8px;
+        font-family: inherit;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: #00ff9d;
+        outline: none;
+      }
+
+      button {
+        width: 100%;
+        background: #333;
+        color: #00ff9d;
+        border: 1px solid #00ff9d;
+        padding: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        text-transform: uppercase;
+        transition: all 0.2s;
+      }
+
+      button:hover {
+        background: #00ff9d;
+        color: #000;
+      }
+
+      #results {
+        max-height: 300px;
+        overflow-y: auto;
+        border-top: 1px solid #333;
+        margin-top: 10px;
+      }
+
+      .memory-item {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .memory-item:hover {
+        background: #252525;
+        border-color: #555;
+      }
+
+      .memory-meta {
+        font-size: 10px;
+        color: #666;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+
+      .memory-content {
+        font-size: 12px;
+        line-height: 1.4;
+        color: #ccc;
+      }
+
+      .status {
+        font-size: 11px;
+        color: #888;
+        margin-top: 5px;
+        text-align: center;
+        min-height: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>§.RAWR.§</h2>
+
+    <div class="section">
+      <input
+        type="text"
+        id="search-input"
+        placeholder="Buscar en exocórtex..."
+      />
+      <button id="search-btn">🔍 Buscar</button>
+      <div id="results"></div>
+    </div>
+
+    <div class="section">
+      <textarea
+        id="quick-save"
+        rows="3"
+        placeholder="Guardar nota rápida..."
+      ></textarea>
+      <button id="save-btn">💾 Guardar en §</button>
+      <div id="status-msg" class="status"></div>
+    </div>
+
+    <div class="section" style="border-top: 1px solid #333; padding-top: 10px">
+      <button id="compress-btn" title="Comprimir selección">
+        📉 §Codec Compress
+      </button>
+    </div>
+
+    <script src="sidebar.js"></script>
+  </body>
+</html>

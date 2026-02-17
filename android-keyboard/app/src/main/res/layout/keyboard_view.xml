@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#111111"
+    android:paddingBottom="5dp">
+
+    <!-- Suggestions Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:orientation="horizontal"
+        android:background="#222222">
+        <TextView
+            android:id="@+id/suggestion1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="RAWR"
+            android:textColor="#00ff9d"
+            android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <!-- Keys Container (Simplified QWERTY) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="[ QWERTY LAYOUT PLACEHOLDER ]"
+            android:textColor="#555555" />
+            
+        <!-- The § Key -->
+        <Button
+            android:id="@+id/btn_rawr"
+            android:layout_width="60dp"
+            android:layout_height="50dp"
+            android:text="§"
+            android:textSize="24sp"
+            android:textColor="#00ff9d"
+            android:backgroundTint="#333333"
+            android:layout_marginTop="20dp"/>
+            
+    </LinearLayout>
+</LinearLayout>

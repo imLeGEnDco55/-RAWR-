@@ -44,7 +44,7 @@ DICT_CORE: dict[str, str] = {
     "api:": "interfaz de programación",
     "ui:": "interfaz de usuario",
     "doc:": "documento",
-    "cfg:": "configuración",
+    "config:": "configuración",
     "dep:": "dependencia",
     "env:": "entorno",
     "pkg:": "paquete",
