@@ -98,16 +98,24 @@ function parseTags() {
   return raw.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
 }
 
-// ── 🔍 Search ──
+// ── 🔍 Search (semantic or #tag) ──
 async function searchMemories() {
-  const query = searchInput.value.trim();
-  if (!query) return;
+  const raw = searchInput.value.trim();
+  if (!raw) return;
 
   setStatus('Buscando...');
   resultsDiv.innerHTML = '';
 
+  // Route: #tag1,tag2 → tag search | anything else → semantic
+  const isTagSearch = raw.startsWith('#');
+  const query = isTagSearch ? raw.slice(1).trim() : raw;
+  if (!query) return;
+
   try {
-    const res = await fetch(`${API_URL}/retrieve?query=${encodeURIComponent(query)}&limit=5`);
+    const url = isTagSearch
+      ? `${API_URL}/search-tags?tag=${encodeURIComponent(query)}&limit=20`
+      : `${API_URL}/retrieve?query=${encodeURIComponent(query)}&limit=5`;
+    const res = await fetch(url);
     const data = await res.json();
 
     if (data.results && data.results.length > 0) {
@@ -151,7 +159,7 @@ async function searchMemories() {
         };
         resultsDiv.appendChild(el);
       });
-      setStatus(`Encontrados ${data.count}`);
+      setStatus(`${isTagSearch ? '🏷️' : '🔍'} ${data.count} encontrados`);
     } else {
       const empty = document.createElement('div');
       empty.style.cssText = 'text-align:center; color:#666; padding:10px;';

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>microgpt.js</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-size: 8.5px;
+  --line-height: 1.5;
+  --col-gap: 32px;
+  --bg: #0a0a0a;
+  --fg: #c9d1d9;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: radial-gradient(ellipse at 50% 40%, #0f1318 0%, var(--bg) 100%);
+  color: var(--fg);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+}
+
+/* ── Poster page: exactly one viewport ── */
+.poster {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 10px 16px;
+}
+.header {
+  text-align: center;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #1b2028;
+  flex-shrink: 0;
+}
+.header h1 {
+  font-size: 30px;
+  font-weight: 300;
+  letter-spacing: 10px;
+  text-transform: lowercase;
+  color: #e6edf3;
+  margin-bottom: 6px;
+}
+.header .sub {
+  font-size: 11px;
+  color: #6e7681;
+  font-weight: 300;
+  font-style: italic;
+}
+.columns-row {
+  display: flex;
+  gap: var(--col-gap);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.col {
+  flex: 1 1 0;
+  overflow: auto;
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  border-right: 1px solid #161b22;
+  scrollbar-width: none;
+}
+.col::-webkit-scrollbar { display: none; }
+.col:last-child { border-right: none; }
+.line {
+  white-space: pre;
+  padding: 0 2px;
+}
+.ln {
+  display: inline-block;
+  width: 22px;
+  text-align: right;
+  color: #3d444d;
+  user-select: none;
+  margin-right: 14px;
+  font-size: 9px;
+}
+/* Syntax highlighting — GitHub Dark inspired */
+.kw  { color: #ff7b72; }
+.str { color: #a5d6ff; }
+.num { color: #79c0ff; }
+.cmt { color: #6e7681; font-style: italic; }
+.fn  { color: #d2a8ff; }
+.bi  { color: #ffa657; }
+.cls { color: #ffa657; }
+.bottom-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 16px;
+  margin-top: 12px;
+  border-top: 1px solid #1b2028;
+  gap: 40px;
+}
+.footer {
+  color: #30363d;
+  font-size: 11px;
+  letter-spacing: 4px;
+  font-weight: 300;
+}
+.run-btn {
+  display: inline-block;
+  padding: 10px 36px;
+  background: transparent;
+  border: 1px solid #30363d;
+  color: #e6edf3;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 6px;
+  text-transform: lowercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+}
+.run-btn:hover {
+  border-color: #58a6ff;
+  color: #58a6ff;
+  box-shadow: 0 0 20px rgba(88, 166, 255, 0.1);
+}
+.run-btn:active { transform: scale(0.98); }
+.run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Runner output page ── */
+#runner {
+  min-height: 100vh;
+  padding: 60px 10px 40px;
+}
+#runner .header {
+  margin-bottom: 24px;
+}
+#runner .header h2 {
+  font-size: 22px;
+  font-weight: 300;
+  letter-spacing: 6px;
+  text-transform: lowercase;
+  color: #e6edf3;
+  margin-bottom: 6px;
+}
+#runner .header .sub {
+  font-size: 11px;
+  color: #6e7681;
+  font-weight: 300;
+  font-style: italic;
+}
+.output-container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: #0d1117;
+  border: 1px solid #161b22;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.output-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #161b22;
+  border-bottom: 1px solid #21262d;
+}
+.output-bar .dots { display: flex; gap: 6px; }
+.output-bar .dot { width: 10px; height: 10px; border-radius: 50%; }
+.output-bar .dot.r { background: #ff5f56; }
+.output-bar .dot.y { background: #ffbd2e; }
+.output-bar .dot.g { background: #27c93f; }
+.output-bar .title { font-size: 11px; color: #6e7681; letter-spacing: 2px; }
+.output-bar .spacer { width: 52px; }
+#output {
+  padding: 16px 20px;
+  font-size: 12px;
+  line-height: 1.6;
+  max-height: 70vh;
+  overflow-y: auto;
+  color: var(--fg);
+}
+#output .log-line { white-space: pre-wrap; word-break: break-all; }
+#output .log-line.step { color: #6e7681; }
+#output .log-line.info { color: #58a6ff; }
+#output .log-line.sep { color: #ffa657; margin-top: 8px; margin-bottom: 4px; }
+#output .log-line.sample { color: #7ee787; }
+.progress-bar-container { height: 2px; background: #21262d; }
+.progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #58a6ff, #d2a8ff); transition: width 0.15s ease; }
+</style>
+</head>
+<body>
+
+<!-- ── Poster page ── -->
+<div class="poster">
+  <div class="header">
+    <h1>microgpt.js</h1>
+    <div class="sub">The most atomic way to train and inference a GPT in pure, dependency-free JavaScript. This file is the complete algorithm. Everything else is just efficiency.</div>
+  </div>
+  <div class="columns-row">
+    <div class="col" id="col1"></div>
+    <div class="col" id="col2"></div>
+    <div class="col" id="col3"></div>
+  </div>
+  <div class="bottom-bar">
+    <div class="footer">@karpathy (original Python) &middot; @xenova (JavaScript port)</div>
+    <button class="run-btn" id="runBtn" onclick="startRun()">&#9654;&ensp;run</button>
+  </div>
+</div>
+
+<!-- ── Runner output page ── -->
+<div id="runner">
+  <div class="header">
+    <h2>output</h2>
+    <div class="sub" id="status">press run to train microgpt.js in your browser</div>
+  </div>
+  <div class="output-container">
+    <div class="output-bar">
+      <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+      <div class="title">microgpt.js</div>
+      <div class="spacer"></div>
+    </div>
+    <div class="progress-bar-container"><div class="progress-bar" id="progressBar"></div></div>
+    <div id="output"></div>
+  </div>
+</div>
+
+<!-- ═══ Single source of truth: the microgpt.js code ═══ -->
+<script type="text/plain" id="src">
+/**
+ * The most atomic way to train and inference a GPT in pure, dependency-free JavaScript.
+ * This file is the complete algorithm.
+ * Everything else is just efficiency.
+ *
+ * @karpathy (original Python), @xenova (JavaScript port)
+ */
+
+import fs from 'fs'; // for reading the input text file
+import random from './random.js'; // random.seed, random.choices, random.gauss, random.shuffle
+random.seed(42); // Let there be order among chaos
+
+const docs = fs.readFileSync('input.txt', 'utf-8').trim().split('\n').map(l => l.trim()).filter(l => l.length > 0); // list of documents
+random.shuffle(docs);
+console.log(`num docs: ${docs.length}`);
+
+// Let there be a Tokenizer to translate strings to discrete symbols and back
+const uchars = [...new Set(docs.join(''))].sort(); // unique characters in the dataset become token ids 0..n-1
+const char_to_id = new Map(uchars.map((ch, i) => [ch, i])); // fast character lookup
+const BOS = uchars.length; // token id for the special Beginning of Sequence (BOS) token
+const vocab_size = uchars.length + 1; // total number of unique tokens, +1 is for BOS
+console.log(`vocab size: ${vocab_size}`);
+
+// Let there be Autograd, to recursively apply the chain rule through a computation graph
+let _gen = 0; // global generation counter for autograd, to help with topological sorting of the graph during backward pass
+class Value {
+  constructor(data, children = [], local_grads = []) {
+    this.data = data;             // scalar value of this node calculated during forward pass
+    this.grad = 0;                // derivative of the loss w.r.t. this node, calculated in backward pass
+    this._c0 = children[0];       // children of this node in the computation graph
+    this._c1 = children[1];
+    this._lg0 = local_grads[0];   // local derivative of this node w.r.t. its children
+    this._lg1 = local_grads[1];
+    this._nch = children.length;  // number of children (0, 1, or 2)
+    this._gen = 0;
+  }
+
+  add(other) {
+    if (other instanceof Value) return new Value(this.data + other.data, [this, other], [1, 1]);
+    return new Value(this.data + other, [this], [1]);
+  }
+
+  mul(other) {
+    if (other instanceof Value) return new Value(this.data * other.data, [this, other], [other.data, this.data]);
+    return new Value(this.data * other, [this], [other]);
+  }
+
+  pow(other) { return new Value(this.data ** other, [this], [other * this.data ** (other - 1)]); }
+  log() { return new Value(Math.log(this.data), [this], [1 / this.data]); }
+  exp() { const e = Math.exp(this.data); return new Value(e, [this], [e]); }
+  relu() { return new Value(Math.max(0, this.data), [this], [+(this.data > 0)]); }
+  neg() { return new Value(-this.data, [this], [-1]); }
+  sub(other) { return this.add(other instanceof Value ? other.neg() : -other); }
+  div(other) { return this.mul(other instanceof Value ? other.pow(-1) : 1 / other); }
+
+  backward() {
+    const gen = ++_gen;
+    const topo = [];
+    function build_topo(v) {
+      if (v._gen === gen) return;
+      v._gen = gen;
+      if (v._nch >= 1) build_topo(v._c0);
+      if (v._nch === 2) build_topo(v._c1);
+      topo.push(v);
+    }
+    build_topo(this);
+    this.grad = 1;
+    for (let i = topo.length - 1; i >= 0; --i) {
+      const v = topo[i], g = v.grad;
+      if (v._nch >= 1) v._c0.grad += v._lg0 * g;
+      if (v._nch === 2) v._c1.grad += v._lg1 * g;
+    }
+  }
+}
+
+// Initialize the parameters, to store the knowledge of the model.
+const n_embd = 16;     // embedding dimension
+const n_head = 4;      // number of attention heads
+const n_layer = 1;     // number of layers
+const block_size = 16; // maximum sequence length
+const head_dim = Math.floor(n_embd / n_head); // dimension of each head
+const scale = 1 / head_dim ** 0.5; // precomputed attention scale factor
+const matrix = (nout, nin, std = 0.08) => Array.from({ length: nout }, () => Array.from({ length: nin }, () => new Value(random.gauss(0, std))));
+const state_dict = { wte: matrix(vocab_size, n_embd), wpe: matrix(block_size, n_embd), lm_head: matrix(vocab_size, n_embd) };
+for (let i = 0; i < n_layer; ++i) {
+  state_dict[`layer${i}.attn_wq`] = matrix(n_embd, n_embd);
+  state_dict[`layer${i}.attn_wk`] = matrix(n_embd, n_embd);
+  state_dict[`layer${i}.attn_wv`] = matrix(n_embd, n_embd);
+  state_dict[`layer${i}.attn_wo`] = matrix(n_embd, n_embd);
+  state_dict[`layer${i}.mlp_fc1`] = matrix(4 * n_embd, n_embd);
+  state_dict[`layer${i}.mlp_fc2`] = matrix(n_embd, 4 * n_embd);
+}
+const params = Object.values(state_dict).flat(Infinity); // flatten params into a single list of Values
+console.log(`num params: ${params.length}`);
+
+// Define the model architecture: a stateless function mapping token sequence and parameters to logits over what comes next.
+// Follow GPT-2, blessed among the GPTs, with minor differences: layernorm -> rmsnorm, no biases, GeLU -> ReLU
+const sum = (arr) => arr.reduce((a, b) => a.add(b));
+const zip = (a, b) => a.map((ai, i) => [ai, b[i]]);
+
+function linear(x, w) {
+  return w.map(wo => sum(wo.map((wi, i) => wi.mul(x[i]))));
+}
+
+function softmax(logits) {
+  const max_val = Math.max(...logits.map(v => v.data));
+  const exps = logits.map(v => v.sub(max_val).exp());
+  const total = sum(exps);
+  return exps.map(e => e.div(total));
+}
+
+function rmsnorm(x) {
+  const ms = sum(x.map(xi => xi.mul(xi))).mul(1 / x.length);
+  const s = ms.add(1e-5).pow(-0.5);
+  return x.map(xi => xi.mul(s));
+}
+
+function gpt(token_id, pos_id, keys, values) {
+  const tok_emb = state_dict['wte'][token_id]; // token embedding
+  const pos_emb = state_dict['wpe'][pos_id];   // position embedding
+  let x = zip(tok_emb, pos_emb).map(([t, p]) => t.add(p)); // joint token and position embedding
+  x = rmsnorm(x);
+
+  for (let li = 0; li < n_layer; ++li) {
+    // 1) Multi-head attention block
+    let x_residual = x;
+    x = rmsnorm(x);
+    const q = linear(x, state_dict[`layer${li}.attn_wq`]);
+    const k = linear(x, state_dict[`layer${li}.attn_wk`]);
+    const v = linear(x, state_dict[`layer${li}.attn_wv`]);
+    keys[li].push(k);
+    values[li].push(v);
+    const x_attn = [];
+    for (let h = 0; h < n_head; ++h) {
+      const hs = h * head_dim;
+      const q_h = q.slice(hs, hs + head_dim);
+      const k_h = keys[li].map(ki => ki.slice(hs, hs + head_dim));
+      const v_h = values[li].map(vi => vi.slice(hs, hs + head_dim));
+      const attn_logits = k_h.map(kt => sum(zip(q_h, kt).map(([qi, ki]) => qi.mul(ki))).mul(scale));
+      const attn_weights = softmax(attn_logits);
+      for (let j = 0; j < head_dim; ++j)
+        x_attn.push(sum(attn_weights.map((aw, t) => aw.mul(v_h[t][j]))));
+    }
+    x = linear(x_attn, state_dict[`layer${li}.attn_wo`]);
+    x = x.map((a, i) => a.add(x_residual[i]));
+    // 2) MLP block
+    x_residual = x;
+    x = rmsnorm(x);
+    x = linear(x, state_dict[`layer${li}.mlp_fc1`]);
+    x = x.map(xi => xi.relu());
+    x = linear(x, state_dict[`layer${li}.mlp_fc2`]);
+    x = x.map((a, i) => a.add(x_residual[i]));
+  }
+
+  return linear(x, state_dict['lm_head']);
+}
+
+// Let there be Adam, the blessed optimizer and its buffers
+const learning_rate = 0.01, beta1 = 0.85, beta2 = 0.99, eps_adam = 1e-8;
+const m_buf = new Float64Array(params.length); // first moment buffer
+const v_buf = new Float64Array(params.length); // second moment buffer
+
+// Repeat in sequence
+const num_steps = 1000; // number of training steps
+for (let step = 0; step < num_steps; ++step) {
+
+  // Take single document, tokenize it, surround it with BOS special token on both sides
+  const doc = docs[step % docs.length];
+  const tokens = [BOS, ...Array.from(doc, ch => char_to_id.get(ch)), BOS];
+  const n = Math.min(block_size, tokens.length - 1);
+
+  // Forward the token sequence through the model, building up the computation graph all the way to the loss.
+  const keys = Array.from({ length: n_layer }, () => []);
+  const values = Array.from({ length: n_layer }, () => []);
+  const losses = [];
+  for (let pos_id = 0; pos_id < n; ++pos_id) {
+    const token_id = tokens[pos_id], target_id = tokens[pos_id + 1];
+    const logits = gpt(token_id, pos_id, keys, values);
+    const probs = softmax(logits);
+    const loss_t = probs[target_id].log().neg();
+    losses.push(loss_t);
+  }
+  const loss = sum(losses).mul(1 / n); // final average loss over the document sequence. May yours be low.
+
+  // Backward the loss, calculating the gradients with respect to all model parameters.
+  loss.backward();
+
+  // Adam optimizer update: update the model parameters based on the corresponding gradients.
+  const lr_t = learning_rate * (1 - step / num_steps); // linear learning rate decay
+  const bc1 = 1 - beta1 ** (step + 1), bc2 = 1 - beta2 ** (step + 1);
+  for (let i = 0; i < params.length; ++i) {
+    const p = params[i];
+    m_buf[i] = beta1 * m_buf[i] + (1 - beta1) * p.grad;
+    v_buf[i] = beta2 * v_buf[i] + (1 - beta2) * p.grad ** 2;
+    const m_hat = m_buf[i] / bc1;
+    const v_hat = v_buf[i] / bc2;
+    p.data -= lr_t * m_hat / (Math.sqrt(v_hat) + eps_adam);
+    p.grad = 0;
+  }
+
+  console.log(`step ${String(step + 1).padStart(4)} / ${String(num_steps).padStart(4)} | loss ${loss.data.toFixed(4)}`);
+}
+
+// Inference: may the model babble back to us
+const temperature = 0.5; // in (0, 1], control the "creativity" of generated text, low to high
+const token_ids = Array.from({ length: vocab_size }, (_, i) => i);
+console.log('\n--- inference (new, hallucinated names) ---');
+for (let sample_idx = 0; sample_idx < 20; ++sample_idx) {
+  const keys = Array.from({ length: n_layer }, () => []);
+  const values = Array.from({ length: n_layer }, () => []);
+  let token_id = BOS;
+  const sample = [];
+  for (let pos_id = 0; pos_id < block_size; ++pos_id) {
+    const logits = gpt(token_id, pos_id, keys, values);
+    const probs = softmax(logits.map(l => l.div(temperature)));
+    token_id = random.choices(token_ids, probs.map(p => p.data));
+    if (token_id === BOS) break;
+    sample.push(uchars[token_id]);
+  }
+  console.log(`sample ${String(sample_idx + 1).padStart(2)}: ${sample.join('')}`);
+}
+</script>
+
+<!-- ═══ Syntax highlighter + 3-column layout builder ═══ -->
+<script>
+(function() {
+  var src = document.getElementById('src').textContent.replace(/^\n/, '').replace(/\n$/, '');
+  var allLines = src.split('\n');
+
+  // Split markers: find the line indices for column boundaries
+  var s2Start = -1, s3Start = -1;
+  for (var i = 0; i < allLines.length; i++) {
+    if (s2Start < 0 && allLines[i].startsWith('// Initialize the parameters')) s2Start = i;
+    else if (s3Start < 0 && allLines[i].startsWith('// Let there be Adam')) s3Start = i;
+  }
+  var sectionBounds = [0, s2Start, s3Start, allLines.length];
+
+  // JS syntax highlighter
+  var KW = new Set([
+    'break','case','catch','class','const','continue','debugger',
+    'default','delete','do','else','export','extends','finally',
+    'for','from','function','if','import','in','instanceof','let',
+    'new','of','return','super','switch','this','throw','try',
+    'typeof','var','void','while','with','yield',
+    'true','false','null','undefined'
+  ]);
+  var BI = new Set([
+    'console','Math','Array','Map','Set','Object','String','Number',
+    'Float64Array','Infinity','NaN','JSON','Promise','parseInt',
+    'parseFloat','isNaN','isFinite','Error','TypeError','fs'
+  ]);
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  var inBlockComment = false;
+  function highlight(line) {
+    if (inBlockComment) {
+      var ci = line.indexOf('*/');
+      if (ci !== -1) { inBlockComment = false; return '<span class="cmt">' + esc(line.slice(0,ci+2)) + '</span>' + process(line.slice(ci+2)); }
+      return '<span class="cmt">' + esc(line) + '</span>';
+    }
+    return process(line);
+  }
+  function process(line) {
+    var r = '', i = 0, prev = '';
+    while (i < line.length) {
+      if (line[i] === ' ' || line[i] === '\t') { r += line[i]; i++; continue; }
+      if (line[i] === '/' && line[i+1] === '*') {
+        var end = line.indexOf('*/', i+2);
+        if (end !== -1) { r += '<span class="cmt">' + esc(line.slice(i, end+2)) + '</span>'; i = end+2; continue; }
+        else { r += '<span class="cmt">' + esc(line.slice(i)) + '</span>'; inBlockComment = true; break; }
+      }
+      if (line[i] === '/' && line[i+1] === '/') { r += '<span class="cmt">' + esc(line.slice(i)) + '</span>'; break; }
+      if (line[i] === '`') {
+        var s = i; i++;
+        while (i < line.length && line[i] !== '`') { if (line[i] === '\\') i++; i++; }
+        if (i < line.length) i++;
+        r += '<span class="str">' + esc(line.slice(s,i)) + '</span>'; prev = ''; continue;
+      }
+      if (line[i] === '"' || line[i] === "'") {
+        var s = i, q = line[i]; i++;
+        while (i < line.length && line[i] !== q) { if (line[i] === '\\') i++; i++; }
+        if (i < line.length) i++;
+        r += '<span class="str">' + esc(line.slice(s,i)) + '</span>'; prev = ''; continue;
+      }
+      if (/\d/.test(line[i]) && (i === 0 || !/[a-zA-Z_$]/.test(line[i-1]))) {
+        var s = i;
+        if (line[i]==='0'&&(line[i+1]==='x'||line[i+1]==='X')){i+=2;while(i<line.length&&/[0-9a-fA-F]/.test(line[i]))i++;}
+        else{while(i<line.length&&/[\d.]/.test(line[i]))i++;if(i<line.length&&(line[i]==='e'||line[i]==='E')){i++;if(i<line.length&&(line[i]==='+'||line[i]==='-'))i++;while(i<line.length&&/\d/.test(line[i]))i++;}}
+        r += '<span class="num">' + esc(line.slice(s,i)) + '</span>'; prev = ''; continue;
+      }
+      if (/[a-zA-Z_$]/.test(line[i])) {
+        var s = i; while (i<line.length&&/[a-zA-Z_$0-9]/.test(line[i]))i++;
+        var w = line.slice(s,i);
+        if (prev==='function'||prev==='class') r+='<span class="fn">'+esc(w)+'</span>';
+        else if (KW.has(w)) r+='<span class="kw">'+w+'</span>';
+        else if (BI.has(w)) r+='<span class="bi">'+w+'</span>';
+        else r+=esc(w);
+        prev=w; continue;
+      }
+      if (line[i]==='='&&line[i+1]==='>'){r+='<span class="kw">=&gt;</span>';i+=2;prev='';continue;}
+      if (line[i]==='.'&&line[i+1]==='.'&&line[i+2]==='.'){r+='<span class="kw">...</span>';i+=3;prev='';continue;}
+      r += esc(line[i]); i++;
+    }
+    return r;
+  }
+
+  // Render: highlight all lines sequentially (preserving block comment state), place into columns
+  var containers = [document.getElementById('col1'), document.getElementById('col2'), document.getElementById('col3')];
+  inBlockComment = false;
+  var lineNum = 1;
+  for (var si = 0; si < 3; si++) {
+    var container = containers[si];
+    for (var li = sectionBounds[si]; li < sectionBounds[si+1]; li++) {
+      var div = document.createElement('div');
+      div.className = 'line';
+      var num = String(lineNum); while (num.length < 3) num = ' ' + num;
+      div.innerHTML = '<span class="ln">' + num + '</span>' + highlight(allLines[li]);
+      container.appendChild(div);
+      lineNum++;
+    }
+  }
+})();
+</script>
+
+<!-- ═══ Web Worker: built from the single #src + random.js preamble ═══ -->
+<script>
+var RANDOM_JS_PREAMBLE = [
+'const mt = new Uint32Array(624); let idx = 625; let _gauss_next = null;',
+'function seed(n) {',
+'    const u = (a, b) => Math.imul(a, b) >>> 0, key = [];',
+'    for (let v = n || 0; v > 0; v = Math.floor(v / 0x100000000)) key.push(v & 0xFFFFFFFF);',
+'    if (!key.length) key.push(0);',
+'    mt[0] = 19650218; for (idx = 1; idx < 624; ++idx) mt[idx] = (u(1812433253, mt[idx-1] ^ (mt[idx-1] >>> 30)) + idx) >>> 0;',
+'    let i = 1, j = 0;',
+'    for (let k = Math.max(624, key.length); k > 0; --k, ++i, ++j) {',
+'        if (i >= 624) { mt[0] = mt[623]; i = 1; } if (j >= key.length) j = 0;',
+'        mt[i] = ((mt[i] ^ u(mt[i-1] ^ (mt[i-1] >>> 30), 1664525)) + key[j] + j) >>> 0;',
+'    }',
+'    for (let k = 623; k > 0; --k, ++i) {',
+'        if (i >= 624) { mt[0] = mt[623]; i = 1; }',
+'        mt[i] = ((mt[i] ^ u(mt[i-1] ^ (mt[i-1] >>> 30), 1566083941)) - i) >>> 0;',
+'    }',
+'    mt[0] = 0x80000000; idx = 624; _gauss_next = null;',
+'}',
+'function int32() {',
+'    if (idx >= 624) { for (let k = 0; k < 624; ++k) {',
+'        const y = (mt[k] & 0x80000000) | (mt[(k+1) % 624] & 0x7FFFFFFF);',
+'        mt[k] = (mt[(k+397) % 624] ^ (y >>> 1) ^ (y & 1 ? 0x9908B0DF : 0)) >>> 0;',
+'    } idx = 0; }',
+'    let y = mt[idx++];',
+'    y ^= y >>> 11; y ^= (y << 7) & 0x9D2C5680; y ^= (y << 15) & 0xEFC60000; y ^= y >>> 18;',
+'    return y >>> 0;',
+'}',
+'function random() { return ((int32() >>> 5) * 67108864.0 + (int32() >>> 6)) / 9007199254740992.0; }',
+'function gauss(mu = 0, sigma = 1) {',
+'    let z = _gauss_next; _gauss_next = null;',
+'    if (z === null) { const x2pi = random() * 2 * Math.PI, g2rad = Math.sqrt(-2 * Math.log(1 - random()));',
+'        z = Math.cos(x2pi) * g2rad; _gauss_next = Math.sin(x2pi) * g2rad; }',
+'    return mu + z * sigma;',
+'}',
+'function shuffle(arr) { for (let i = arr.length - 1; i > 0; --i) {',
+'    const k = 32 - Math.clz32(i + 1); let r = int32() >>> (32 - k); while (r > i) r = int32() >>> (32 - k);',
+'    const t = arr[i]; arr[i] = arr[r]; arr[r] = t;',
+'} }',
+'function choices(population, weights) {',
+'    const cum = new Float64Array(weights.length); cum[0] = weights[0];',
+'    for (let i = 1; i < weights.length; ++i) cum[i] = cum[i-1] + weights[i];',
+'    const x = random() * cum[cum.length - 1];',
+'    let lo = 0, hi = cum.length - 1;',
+'    while (lo < hi) { const mid = (lo + hi) >> 1; x < cum[mid] ? hi = mid : lo = mid + 1; }',
+'    return population[lo];',
+'}'
+].join('\n');
+
+function buildWorkerSrc() {
+  var raw = document.getElementById('src').textContent.replace(/^\n/, '').replace(/\n$/, '');
+  var lines = raw.split('\n');
+  var code = [];
+  code.push(RANDOM_JS_PREAMBLE);
+  code.push('');
+  code.push('self.onmessage = function(e) {');
+  code.push('  const inputText = e.data;');
+  code.push('  const _log = (msg, type) => self.postMessage({ type: type || "log", text: msg });');
+  code.push('');
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    // Skip comment header and import lines
+    if (/^\s*\/\*\*/.test(line) || /^\s*\*/.test(line) || /^\s*import /.test(line)) continue;
+    // Replace fs.readFileSync with inputText
+    line = line.replace(/fs\.readFileSync\('input\.txt',\s*'utf-8'\)/g, 'inputText');
+    // Replace random.X -> bare function calls
+    line = line.replace(/random\.seed/g, 'seed');
+    line = line.replace(/random\.shuffle/g, 'shuffle');
+    line = line.replace(/random\.gauss/g, 'gauss');
+    line = line.replace(/random\.choices/g, 'choices');
+    // Replace console.log with structured messages
+    if (/^\s*console\.log/.test(line)) {
+      if (/num docs|vocab size|num params/.test(line)) {
+        line = line.replace('console.log(', '_log(').replace(/\);\s*$/, ', "info");');
+      } else if (/--- inference/.test(line)) {
+        line = line.replace('console.log(', '_log(').replace(/\);\s*$/, ', "sep");');
+      } else if (/sample_idx/.test(line)) {
+        line = line.replace('console.log(', '_log(').replace(/\);\s*$/, ', "sample");');
+      } else if (/step.*loss/.test(line)) {
+        line = '  self.postMessage({ type: "step", step: step + 1, total: num_steps, loss: loss.data.toFixed(4) });';
+      } else {
+        line = line.replace('console.log(', '_log(').replace(/\);/, ', "log");');
+      }
+    }
+    code.push('  ' + line);
+  }
+  code.push('  self.postMessage({ type: "done" });');
+  code.push('};');
+  return code.join('\n');
+}
+var _workerSrc = buildWorkerSrc();
+</script>
+
+<!-- ═══ Main controller ═══ -->
+<script>
+var worker = null;
+function startRun() {
+  var btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'running\u2026';
+  document.getElementById('runner').scrollIntoView({ behavior: 'smooth' });
+
+  var output = document.getElementById('output');
+  var status = document.getElementById('status');
+  var progressBar = document.getElementById('progressBar');
+  output.innerHTML = '';
+  progressBar.style.width = '0%';
+  status.textContent = 'fetching dataset\u2026';
+
+  var dataUrl = 'https://raw.githubusercontent.com/karpathy/makemore/refs/heads/master/names.txt';
+  fetch(dataUrl).then(function(r) { return r.text(); }).then(function(inputText) {
+    status.textContent = 'training\u2026';
+    var blob = new Blob([_workerSrc], { type: 'application/javascript' });
+    var url = URL.createObjectURL(blob);
+    worker = new Worker(url);
+
+    var stepBatch = [], batchTimer = null;
+    function flushSteps() {
+      if (!stepBatch.length) return;
+      var frag = document.createDocumentFragment();
+      for (var i = 0; i < stepBatch.length; i++) {
+        var d = stepBatch[i], div = document.createElement('div');
+        div.className = 'log-line step';
+        div.textContent = 'step ' + String(d.step).padStart(4) + ' / ' + String(d.total).padStart(4) + ' | loss ' + d.loss;
+        frag.appendChild(div);
+      }
+      output.appendChild(frag);
+      var last = stepBatch[stepBatch.length - 1];
+      progressBar.style.width = ((last.step / last.total) * 100).toFixed(1) + '%';
+      status.textContent = 'training\u2026 step ' + last.step + ' / ' + last.total + ' | loss ' + last.loss;
+      stepBatch = [];
+      output.scrollTop = output.scrollHeight;
+    }
+
+    worker.onmessage = function(e) {
+      var msg = e.data;
+      if (msg.type === 'step') {
+        stepBatch.push(msg);
+        if (!batchTimer) batchTimer = setTimeout(function() { batchTimer = null; flushSteps(); }, 100);
+      } else if (msg.type === 'done') {
+        flushSteps();
+        progressBar.style.width = '100%';
+        status.textContent = 'done!';
+        btn.disabled = false;
+        btn.textContent = '\u25b6  run';
+        worker.terminate(); worker = null;
+        URL.revokeObjectURL(url);
+      } else {
+        flushSteps();
+        var div = document.createElement('div');
+        div.className = 'log-line ' + (msg.type || '');
+        div.textContent = msg.text;
+        output.appendChild(div);
+        output.scrollTop = output.scrollHeight;
+      }
+    };
+    worker.onerror = function(err) {
+      status.textContent = 'error: ' + err.message;
+      btn.disabled = false;
+      btn.textContent = '\u25b6  run';
+    };
+    worker.postMessage(inputText);
+  }).catch(function(err) {
+    status.textContent = 'failed to fetch dataset: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = '\u25b6  run';
+  });
+}
+</script>
+</body>
+</html>

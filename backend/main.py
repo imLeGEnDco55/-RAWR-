@@ -220,6 +220,45 @@ async def recent_memories(count: int = 10):
     return RetrieveResponse(query="[recent]", results=memories, count=len(memories))
 
 
+@app.get("/api/search-tags", response_model=RetrieveResponse)
+async def search_by_tags(tag: str, limit: int = 20):
+    """Search memories by tag (supports comma-separated tags)"""
+    if not supabase:
+        raise HTTPException(503, "Supabase not configured")
+
+    if limit < 1 or limit > 50:
+        limit = 20
+
+    # Support comma-separated tags: "elwaiele,decision" → matches ALL
+    tags = [t.strip().lower() for t in tag.split(",") if t.strip()]
+    if not tags:
+        raise HTTPException(400, "No tags provided")
+
+    # Build query with @> (array contains) for each tag
+    query = supabase.table(TABLE_NAME).select("*")
+    for t in tags:
+        query = query.contains("tags", [t])
+    
+    result = query.order("created_at", desc=True).limit(limit).execute()
+
+    memories = []
+    for row in (result.data or []):
+        memories.append(MemoryItem(
+            id=row["id"],
+            content=row["content"],
+            compressed=row.get("compressed"),
+            source=row.get("source", "unknown"),
+            tags=row.get("tags", []),
+            metadata=row.get("metadata"),
+            similarity=None,
+            created_at=row.get("created_at", datetime.now()),
+        ))
+
+    log.info(f"§ Found {len(memories)} memories with tags: {tags}")
+
+    return RetrieveResponse(query=f"[tags:{','.join(tags)}]", results=memories, count=len(memories))
+
+
 @app.post("/api/compress", response_model=CompressResponse)
 async def compress_text(req: CompressRequest):
     """Compress text using §Codec"""
