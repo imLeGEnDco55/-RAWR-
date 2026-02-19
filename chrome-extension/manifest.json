@@ -34,6 +34,9 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_title": "Abrir §.RAWR.§"
   },

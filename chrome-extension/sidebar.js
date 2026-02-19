@@ -7,6 +7,8 @@ const quickSaveInput = document.getElementById('quick-save');
 const saveBtn = document.getElementById('save-btn');
 const statusMsg = document.getElementById('status-msg');
 const compressBtn = document.getElementById('compress-btn');
+const closeBtn = document.getElementById('close-btn');
+const healthDot = document.getElementById('health-dot');
 
 function setStatus(msg, type = 'info') {
   statusMsg.textContent = msg;
@@ -14,7 +16,40 @@ function setStatus(msg, type = 'info') {
   setTimeout(() => statusMsg.textContent = '', 3000);
 }
 
-// 🔍 Search
+// Fix 3: Sanitize content before rendering (prevent XSS from stored memories)
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ── Fix 5: Health Check ──
+async function checkHealth() {
+  try {
+    const res = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      healthDot.className = 'health-dot online';
+      healthDot.title = 'Backend conectado';
+    } else {
+      healthDot.className = 'health-dot offline';
+      healthDot.title = 'Backend error';
+    }
+  } catch {
+    healthDot.className = 'health-dot offline';
+    healthDot.title = 'Backend offline — inicia el servidor';
+  }
+}
+
+// Check on load + every 30s
+checkHealth();
+setInterval(checkHealth, 30000);
+
+// ── Fix 4: Close Button ──
+closeBtn.onclick = () => {
+  window.parent.postMessage({ type: 'RAWR_CLOSE_SIDEBAR' }, '*');
+};
+
+// ── 🔍 Search ──
 async function searchMemories() {
   const query = searchInput.value.trim();
   if (!query) return;
@@ -30,23 +65,40 @@ async function searchMemories() {
       data.results.forEach(mem => {
         const el = document.createElement('div');
         el.className = 'memory-item';
-        el.innerHTML = `
-          <div class="memory-meta">
-            <span>${new Date(mem.created_at).toLocaleDateString()}</span>
-            <span>${(mem.similarity * 100).toFixed(0)}%</span>
-          </div>
-          <div class="memory-content">${mem.content.substring(0, 150)}${mem.content.length > 150 ? '...' : ''}</div>
-        `;
+
+        // Fix 3: Use textContent for user-generated data
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'memory-meta';
+
+        const dateSpan = document.createElement('span');
+        dateSpan.textContent = new Date(mem.created_at).toLocaleDateString();
+        
+        const simSpan = document.createElement('span');
+        simSpan.textContent = `${(mem.similarity * 100).toFixed(0)}%`;
+
+        metaDiv.appendChild(dateSpan);
+        metaDiv.appendChild(simSpan);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'memory-content';
+        const preview = mem.content.length > 150 ? mem.content.substring(0, 150) + '...' : mem.content;
+        contentDiv.textContent = preview;
+
+        el.appendChild(metaDiv);
+        el.appendChild(contentDiv);
+
         // Click to inject
         el.onclick = () => {
-          // Send message to content script to inject
           window.parent.postMessage({ type: 'RAWR_INJECT', content: mem.content }, '*');
         };
         resultsDiv.appendChild(el);
       });
       setStatus(`Encontrados ${data.count}`);
     } else {
-      resultsDiv.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">Sin resultados 🦕</div>';
+      const empty = document.createElement('div');
+      empty.style.cssText = 'text-align:center; color:#666; padding:10px;';
+      empty.textContent = 'Sin resultados 🦕';
+      resultsDiv.appendChild(empty);
       setStatus('Nada por aquí');
     }
   } catch (err) {
@@ -58,7 +110,7 @@ async function searchMemories() {
 searchBtn.onclick = searchMemories;
 searchInput.onkeypress = (e) => { if (e.key === 'Enter') searchMemories(); };
 
-// 💾 Save
+// ── 💾 Save ──
 saveBtn.onclick = async () => {
   const content = quickSaveInput.value.trim();
   if (!content) return;
@@ -87,7 +139,7 @@ saveBtn.onclick = async () => {
   }
 };
 
-// 📉 Compress Selection
+// ── 📉 Compress Selection ──
 compressBtn.onclick = () => {
   window.parent.postMessage({ type: 'RAWR_GET_SELECTION' }, '*');
 };

@@ -12,14 +12,75 @@
         font-size: 14px;
         overflow-x: hidden;
       }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 5px;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
       h2 {
-        margin: 0 0 15px 0;
+        margin: 0;
         color: #00ff9d;
         font-family: "Courier New", monospace;
         text-transform: uppercase;
         letter-spacing: 2px;
-        border-bottom: 1px solid #333;
-        padding-bottom: 5px;
+      }
+
+      /* Fix 5: Health indicator dot */
+      .health-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        transition: background 0.3s;
+      }
+      .health-dot.online {
+        background: #00ff9d;
+        box-shadow: 0 0 6px #00ff9d;
+      }
+      .health-dot.offline {
+        background: #ff5555;
+        box-shadow: 0 0 6px #ff5555;
+        animation: pulse 1.5s infinite;
+      }
+      .health-dot.checking {
+        background: #888;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* Fix 4: Close button */
+      .close-btn {
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0;
+        width: auto;
+        line-height: 1;
+        transition: color 0.2s;
+      }
+      .close-btn:hover {
+        color: #ff5555;
+        background: none;
       }
 
       .section {
@@ -108,7 +169,17 @@
     </style>
   </head>
   <body>
-    <h2>§.RAWR.§</h2>
+    <div class="header">
+      <div class="header-left">
+        <h2>§.RAWR.§</h2>
+        <span
+          id="health-dot"
+          class="health-dot checking"
+          title="Verificando..."
+        ></span>
+      </div>
+      <button id="close-btn" class="close-btn" title="Cerrar">✕</button>
+    </div>
 
     <div class="section">
       <input
